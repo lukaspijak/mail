@@ -156,10 +156,6 @@ class SmtpMailer implements Mailer
 		$this->read(); // greeting
 
 		$this->write("EHLO $this->clientHost");
-		$ehloResponse = $this->read();
-		if ((int) $ehloResponse !== 250) {
-			$this->write("HELO $this->clientHost", 250);
-		}
 
 		if ($this->secure === 'tls') {
 			$this->write('STARTTLS', 220);
@@ -170,7 +166,17 @@ class SmtpMailer implements Mailer
 			)) {
 				throw new SmtpException('Unable to connect via TLS.');
 			}
-			$this->write("EHLO $this->clientHost", 250);
+			$this->write("EHLO $this->clientHost");
+			$ehloResponse = $this->read();
+			if ((int) $ehloResponse !== 250) {
+				throw new SmtpException('SMTP server did not accept EHLO with error: ' . trim($response));
+			}
+
+		} else {
+			$ehloResponse = $this->read();
+			if ((int) $ehloResponse !== 250) {
+				$this->write("HELO $this->clientHost", 250);
+			}
 		}
 
 		if ($this->username != null && $this->password != null) {
